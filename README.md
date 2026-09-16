@@ -71,6 +71,9 @@ from CDN on first visit); the frontend is plain HTML/CSS/JS with the same
 | `r` | new run |
 | `q` | quit |
 
+Best score is saved locally - `localStorage` in the browser,
+`~/.config/2049/best.json` in the terminal.
+
 ## Layout
 
 ```

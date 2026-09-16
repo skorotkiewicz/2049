@@ -99,6 +99,7 @@ const BIG = ["#ffffff", "#870087"];
 const KIND_EMPTY = 0, KIND_MINE = -1, KIND_FLAG = -2, KIND_EXIT = -3;
 
 let ready = false, state = null, cellEls = [];
+let best = +(localStorage.getItem("2049-best") || 0);
 
 function tileStyle(v) {
   const t = TILE[Math.min(v, 2048)] || BIG;
@@ -107,6 +108,11 @@ function tileStyle(v) {
 
 function render() {
   const s = state;
+  // Best score: persisted locally, claimed on game over
+  if (s.gameOver && s.score > best) {
+    best = s.score;
+    localStorage.setItem("2049-best", best);
+  }
   // HUD
   $("hud").innerHTML =
     `<span><span class="k">HP</span> ` +
@@ -115,6 +121,7 @@ function render() {
     `<b>${s.hp}/${s.maxHp}</b></span>` +
     `<span><span class="k">PWR</span> <b>${s.power}</b></span>` +
     `<span><span class="k">SCORE</span> <b>${s.score}</b></span>` +
+    `<span><span class="k">BEST</span> <b>${Math.max(best, s.gameOver ? 0 : s.score)}</b></span>` +
     `<span><span class="k">DEPTH</span> <b>${s.depth}/${s.maxDepth}</b></span>`;
 
   // Board
@@ -195,8 +202,9 @@ function restartKey() {
     restart();
   } else {
     rArmed = Date.now();
+    const hint = best > 0 ? ` - best: ${best}` : "";
     state.messages = [...state.messages.slice(-3),
-      "Press R again to abandon this run."];
+      `Press R again to abandon this run${hint}.`];
     render();
   }
 }

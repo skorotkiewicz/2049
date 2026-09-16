@@ -17,8 +17,11 @@ Rules
 
 from __future__ import annotations
 
+import json
+import os
 import random
 from dataclasses import dataclass, field
+from pathlib import Path
 
 BOARD_SIZE = 7
 MAX_DEPTH = 8
@@ -34,6 +37,28 @@ def clamp(v: int, lo: int, hi: int) -> int:
     return max(lo, min(hi, v))
 
 
+# ------------------------------------------------------------ best score
+def _best_file() -> Path:
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+    return Path(base) / "2049" / "best.json"
+
+
+def load_best() -> int:
+    try:
+        return int(json.loads(_best_file().read_text()).get("best", 0))
+    except (OSError, ValueError, TypeError):
+        return 0
+
+
+def save_best(score: int) -> None:
+    try:
+        p = _best_file()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"best": score}))
+    except OSError:
+        pass  # scores are a nicety, never a crash
+
+
 @dataclass
 class Cell:
     kind: int = EMPTY  # EMPTY / MINE / FLAG / EXIT
@@ -47,6 +72,7 @@ class Game:
     hp: int = 10
     max_hp: int = 10
     score: int = 0
+    best_score: int = 0
     power: int = 2  # the player's tile value
     board: list[list[Cell]] = field(
         default_factory=lambda: [
@@ -208,6 +234,12 @@ class Game:
         self.log(f"\x1b[1;31mBOOM! A mine hits you for {dmg} damage!\x1b[0m")
         self._probe()
 
+    def _record_best(self) -> None:
+        if self.score > self.best_score:
+            self.best_score = self.score
+            save_best(self.score)
+            self.log(f"\x1b[1;33mNew best score: {self.score}!\x1b[0m")
+
     def _after_move(self) -> None:
         if self.best_merge_this_move >= 32:
             self.hp = clamp(self.hp + 1, 0, self.max_hp)
@@ -218,6 +250,7 @@ class Game:
             self.log(
                 "\x1b[1;31mYour tile shatters. The dungeon keeps your score.\x1b[0m"
             )
+            self._record_best()
 
     def _check_crush(self) -> None:
         """No legal move at all: the dungeon contracts."""
@@ -238,6 +271,7 @@ class Game:
             self.hp = 0
             self.game_over = True
             self.log("\x1b[1;31mCrushed flat. Game over.\x1b[0m")
+            self._record_best()
 
     def _can_move(self, direction: str) -> bool:
         # Simulate on a copy: the slide must not mutate the real board.
@@ -351,6 +385,7 @@ class Game:
             self.victory = True
             self.game_over = True
             self.log("\x1b[1;32mYou climb out of the mines. YOU WIN!\x1b[0m")
+            self._record_best()
             return
         self.depth += 1
         bonus = self.depth * 5
@@ -371,5 +406,6 @@ class Game:
 
 def new_game() -> Game:
     g = Game()
+    g.best_score = load_best()
     g.start()
     return g

@@ -44,7 +44,8 @@ def render(g: Game) -> str:
     lines.append(f"{BOLD}{title}{RESET}")
     lines.append(
         f"  HP {_hp_bar(g.hp, g.max_hp)}   PWR {BOLD}{g.power}{RESET}"
-        f"   SCORE {BOLD}{g.score}{RESET}   T {g.turn}"
+        f"   SCORE {BOLD}{g.score}{RESET}   BEST {BOLD}{g.best_score}{RESET}"
+        f"   T {g.turn}"
     )
     lines.append("  " + "\u2500" * (BOARD_SIZE * 5))
 
