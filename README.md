@@ -20,7 +20,7 @@
 </p>
 
 <details>
-<summary align="center">also runs in the browser (<code>uv run game-web</code>)</summary>
+<summary align="center">💻 also runs in the browser (<code>uv run game-web</code>)</summary>
 <p align="center">
   <img src="assets/screenshot-web.png" alt="2049 - Mines of Merge web version" width="420">
 </p>
