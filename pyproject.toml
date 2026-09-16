@@ -6,6 +6,8 @@ readme = "README.md"
 authors = [
     { name = "Sebastian Korotkiewicz", email = "skorotkiewicz@gmail.com" }
 ]
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = []
 
