@@ -93,6 +93,7 @@ def _take_key(buf: str) -> tuple[str | None, str]:
 
 
 def _read_posix() -> str:
+    import os
     import select
     import termios
     import tty
@@ -106,20 +107,27 @@ def _read_posix() -> str:
         return _parse_line(sys.stdin.readline())
     try:
         tty.setraw(fd)
+        # NOTE: read the raw fd via os.read, NOT sys.stdin.read().
+        # sys.stdin is a TextIOWrapper whose internal buffer swallows
+        # whole escape sequences on the first read(1), which makes
+        # select() on the fd useless and shreds sequences into
+        # orphaned fragments ('[', 'C', ...).
         while True:
             key, _buf = _take_key(_buf)
             if key is not None:
                 return key
             if _buf.startswith("\x1b"):
                 # Incomplete escape: briefly wait for the rest of it.
-                r, _, _ = select.select([sys.stdin], [], [], 0.05)
+                r, _, _ = select.select([fd], [], [], 0.05)
                 if not r:
                     _buf = ""  # lone ESC, or the sender stopped: drop it
                     continue
-            ch = sys.stdin.read(1)
-            if ch == "":
+                data = os.read(fd, 1024)
+            else:
+                data = os.read(fd, 1)  # nothing buffered: block for input
+            if not data:
                 return "q"  # EOF
-            _buf += ch
+            _buf += data.decode("latin-1")
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
