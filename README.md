@@ -16,6 +16,18 @@ uv run game
 
 No dependencies beyond Python itself; everything is managed by `uv`.
 
+## Run in the browser
+
+```sh
+uv run game-web
+```
+
+Serves `web/` and opens your browser. The same `core.py` runs in the
+browser via [Pyodide](https://pyodide.org) (Python → WebAssembly, loaded
+from CDN on first visit); the frontend is plain HTML/CSS/JS with the same
+2048 palette. Works on touch screens too — just swipe. The `web/` folder
+is fully static, so it also deploys as-is to GitHub Pages.
+
 ## How it works
 
 - **2048 half** — every move slides *all* tiles (you included). Slide into an

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>2049 — Mines of Merge</title>
+<style>
+  :root {
+    --bg: #0d0d0d; --panel: #1c1c1c; --line: #3a3a3a;
+    --fg: #d4d4d4; --dim: #7a7a7a;
+    --blue: #005fff; --red: #ff5f5f; --green: #00d787; --yellow: #ffd75f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: "JetBrains Mono", "Fira Mono", "DejaVu Sans Mono", ui-monospace, monospace;
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 16px; touch-action: none; overscroll-behavior: none;
+  }
+  #app { width: min(560px, 100%); }
+  h1 { font-size: 20px; letter-spacing: 4px; margin-bottom: 2px; }
+  h1 span { color: var(--dim); letter-spacing: 1px; font-weight: 400; font-size: 15px; }
+  #hud { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline;
+         padding: 8px 2px; font-size: 14px; }
+  .hp-on  { color: var(--red); font-weight: 700; }
+  .hp-off { color: var(--line); }
+  .k { color: var(--dim); }
+  b { color: #fff; }
+  #board {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    background: var(--panel); padding: 10px; border-radius: 10px;
+    aspect-ratio: 1; position: relative; user-select: none;
+  }
+  .cell {
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; border-radius: 8px; font-size: clamp(16px, 4.5vmin, 26px);
+    background: #161616; color: var(--fg);
+  }
+  .cell.pop  { animation: pop .12s ease-out; }
+  @keyframes pop { from { transform: scale(.75); } to { transform: scale(1); } }
+  #msgs { padding: 10px 4px 0; font-size: 13px; min-height: 84px; line-height: 1.55; }
+  #msgs .m-boom { color: var(--red); font-weight: 700; }
+  #msgs .m-good { color: var(--green); }
+  #msgs .m-warn { color: var(--yellow); }
+  #msgs .m-info { color: var(--fg); }
+  #msgs .m-dim  { color: var(--dim); }
+  .hint { color: var(--dim); font-size: 12px; padding: 8px 2px; }
+  #overlay {
+    position: absolute; inset: 0; border-radius: 10px;
+    background: rgba(13,13,13,.86); backdrop-filter: blur(2px);
+    display: flex; flex-direction: column; gap: 12px;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  #overlay h2 { font-size: 26px; }
+  #overlay button {
+    font: inherit; font-weight: 700; cursor: pointer;
+    background: var(--blue); color: #fff; border: 0; border-radius: 8px;
+    padding: 10px 26px;
+  }
+  #overlay button:hover { filter: brightness(1.2); }
+  #status { padding: 30px 10px; color: var(--dim); }
+  .flash { animation: flash .3s; }
+  @keyframes flash { 0% { background: #5f0000; } 100% { } }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>2 0 4 9 <span>— Mines of Merge</span></h1>
+  <div id="status">loading python runtime… (≈3 MB from CDN, cached after)</div>
+  <div id="game" hidden>
+    <div id="hud"></div>
+    <div id="board"></div>
+    <div id="msgs"></div>
+    <p class="hint">arrows / wasd — slide &nbsp;·&nbsp; R — restart &nbsp;·&nbsp; on touch: swipe</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.3/full/pyodide.js"></script>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+
+// 2048 palette [fg, bg, bold] — mirrors the terminal UI
+const TILE = {
+  2:    ["#bcbcbc", "#303030"],
+  4:    ["#d7af87", "#3a3a3a"],
+  8:    ["#ff8700", "#444444"],
+  16:   ["#ff5f5f", "#4e4e4e"],
+  32:   ["#ff3b3b", "#585858"],
+  64:   ["#ff5f5f", "#5f0000"],
+  128:  ["#ffff00", "#5f5f00"],
+  256:  ["#ffff00", "#878700"],
+  512:  ["#87ff00", "#005f00"],
+  1024: ["#87ff00", "#008700"],
+  2048: ["#ffffff", "#870087"],
+};
+const BIG = ["#ffffff", "#870087"];
+const KIND_EMPTY = 0, KIND_MINE = -1, KIND_FLAG = -2, KIND_EXIT = -3;
+
+let ready = false, state = null, cellEls = [];
+
+function tileStyle(v) {
+  const t = TILE[Math.min(v, 2048)] || BIG;
+  return [t[0], t[1], v > 2048 || t[2]];
+}
+
+function render() {
+  const s = state;
+  // HUD
+  $("hud").innerHTML =
+    `<span><span class="k">HP</span> ` +
+    `<span class="hp-on">${"#".repeat(s.hp)}</span>` +
+    `<span class="hp-off">${"·".repeat(s.maxHp - s.hp)}</span> ` +
+    `<b>${s.hp}/${s.maxHp}</b></span>` +
+    `<span><span class="k">PWR</span> <b>${s.power}</b></span>` +
+    `<span><span class="k">SCORE</span> <b>${s.score}</b></span>` +
+    `<span><span class="k">DEPTH</span> <b>${s.depth}/${s.maxDepth}</b></span>`;
+
+  // Board
+  const board = $("board");
+  if (!cellEls.length) {
+    for (let i = 0; i < 49; i++) {
+      const d = document.createElement("div");
+      d.className = "cell";
+      board.appendChild(d);
+      cellEls.push(d);
+    }
+  }
+  for (let r = 0; r < 7; r++) for (let c = 0; c < 7; c++) {
+    const el = cellEls[r * 7 + c];
+    const cell = s.board[r][c];
+    const isPlayer = r === s.prow && c === s.pcol;
+    el.classList.remove("flash");
+    if (isPlayer) {
+      el.textContent = s.power;
+      el.style.color = "#fff"; el.style.background = "var(--blue)";
+      el.classList.add("pop");
+    } else if (cell.value > 0) {
+      const [fg, bg, bold] = tileStyle(cell.value);
+      el.textContent = cell.value >= 10000 ? (cell.value / 1000 | 0) + "k" : cell.value;
+      el.style.color = fg; el.style.background = bg;
+      el.style.fontWeight = bold || cell.value >= 64 ? 700 : 500;
+    } else if (cell.kind === KIND_FLAG) {
+      el.textContent = "!"; el.style.color = "#ff5faf";
+      el.style.background = "#5f0000"; el.style.fontWeight = 700;
+    } else if (cell.kind === KIND_EXIT) {
+      el.textContent = "»"; el.style.color = "var(--green)";
+      el.style.background = "#005f00"; el.style.fontWeight = 700;
+    } else if (cell.clue !== null && cell.clue > 0) {
+      el.textContent = cell.clue;
+      el.style.color = cell.clue <= 2 ? "#5fff87" : "var(--yellow)";
+      el.style.background = "#161616"; el.style.fontWeight = 400;
+    } else if (cell.clue === 0) {
+      el.textContent = "·"; el.style.color = "#4e4e4e";
+      el.style.background = "#161616"; el.style.fontWeight = 400;
+    } else {
+      el.textContent = ""; el.style.background = "#161616";
+    }
+  }
+
+  // Messages
+  const cls = (m) =>
+    m.includes("BOOM") || m.includes("shatters") ? "m-boom"
+    : m.includes("descend") || m.includes("+1 HP") || m.includes("wounds") ? "m-good"
+    : m.includes("crush") ? "m-warn"
+    : m.includes("can't") || m.includes("Unknown") ? "m-dim"
+    : "m-info";
+  $("msgs").innerHTML = s.messages
+    .map((m) => `<div class="${cls(m)}">${m}</div>`).join("");
+
+  // Game over overlay
+  let ov = document.getElementById("overlay");
+  if (s.gameOver) {
+    if (!ov) {
+      ov = document.createElement("div"); ov.id = "overlay";
+      board.appendChild(ov);
+    }
+    ov.innerHTML = s.victory
+      ? `<h2 style="color:var(--green)">YOU ESCAPED!</h2>`
+      : `<h2 style="color:var(--red)">GAME OVER</h2>` +
+        `<div>The dungeon keeps your score.</div>`;
+    ov.innerHTML += `<div style="font-size:18px">score <b>${s.score}</b> · depth ${s.depth}</div>` +
+      `<button id="again">dig again (R)</button>`;
+    ov.querySelector("#again").onclick = restart;
+  } else if (ov) { ov.remove(); }
+}
+
+function restart() { if (!ready) return; state = JSON.parse(shimFn.new()); render(); }
+
+function doMove(d) {
+  if (!ready || state.gameOver) return;
+  state = JSON.parse(shimFn.move(d));
+  render();
+}
+
+// ---- keyboard ----
+const KEYS = {
+  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
+  w: "up", s: "down", a: "left", d: "right",
+  k: "up", j: "down", h: "left", l: "right",
+};
+addEventListener("keydown", (e) => {
+  if (!ready) return;
+  if (e.key === "r" || e.key === "R") { if (state.gameOver) restart(); return; }
+  const d = KEYS[e.key];
+  if (d) { e.preventDefault(); doMove(d); }
+});
+
+// ---- swipe ----
+let tx = 0, ty = 0;
+addEventListener("touchstart", (e) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+addEventListener("touchend", (e) => {
+  const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  doMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+}, { passive: true });
+
+// ---- boot python ----
+let py, shimFn;                       // shimFn: the Python shim module
+const boot = async () => {
+  py = await loadPyodide();
+  py.FS.writeFile("core.py", await (await fetch("core.py")).text());
+  py.FS.writeFile("shim.py", await (await fetch("shim.py")).text());
+  py.runPython("import shim");
+  shimFn = py.globals.get("shim");   // modules live in globals, not on `py`
+  state = JSON.parse(shimFn.new());
+  $("status").hidden = true; $("game").hidden = false;
+  ready = true; render();
+};
+boot().catch((e) => { $("status").textContent = "failed to load: " + e; });
+</script>
+</body>
+</html>
