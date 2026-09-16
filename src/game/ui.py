@@ -73,9 +73,9 @@ def render(g: Game) -> str:
     lines.append("  " + "\u2500" * (BOARD_SIZE * 5))
     lines.append(
         f"  {DIM}you=\x1b[0m\x1b[1;38;5;27m{str(g.power).center(4)}{RESET}"
-        f"{DIM}  ! = flagged mine  1-9 = clues  >> = stairs{RESET}"
+        f"{DIM}  ! = flagged mine  numbers = clues  >> = stairs{RESET}"
     )
-    lines.append(f"  {DIM}move: arrows / hjkl   q: quit{RESET}")
+    lines.append(f"  {DIM}move: arrows / wasd / hjkl   q: quit{RESET}")
 
     if g.messages:
         lines.append("")

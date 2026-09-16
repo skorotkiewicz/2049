@@ -9,9 +9,22 @@ from .core import new_game
 from .ui import render
 
 CLEAR = "\x1b[2J\x1b[H"
+MOVES = ("up", "down", "left", "right")
+
+
+def _key_diagnostic() -> int:
+    """Print raw key codes until Ctrl-C or q -- for debugging terminals."""
+    print("Press keys to see their codes (q / Ctrl-C to exit):")
+    while True:
+        key = input_mod.read_key()
+        print(repr(key), flush=True)
+        if key == "q":
+            return 0
 
 
 def main() -> int:
+    if "--keys" in sys.argv:
+        return _key_diagnostic()
     print(CLEAR, end="")
     while True:
         g = new_game()
@@ -20,16 +33,18 @@ def main() -> int:
             sys.stdout.flush()
             if g.game_over:
                 key = input_mod.read_key()
-                if key in ("q", "Q", "\x03"):
+                if key == "q":
                     return 0
-                if key in ("r", "R"):
+                if key == "r":
                     break  # new run
                 continue
             key = input_mod.read_key()
-            if key in ("q", "Q", "\x03"):
+            if key == "q":
                 return 0
-            if key in ("up", "down", "left", "right"):
+            if key in MOVES:
                 g.move(key)
+            elif key:
+                g.log(f"Unknown key {key!r}: use arrows / wasd, q to quit.")
 
 
 if __name__ == "__main__":
