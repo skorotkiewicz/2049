@@ -224,6 +224,13 @@ const KEYS = {
 addEventListener("keydown", (e) => {
   if (!ready) return;
   if (e.key === "r" || e.key === "R") { restartKey(); return; }
+  if (e.key === "f" || e.key === "F" || e.key === "!") {
+    e.preventDefault();
+    state.messages = [...state.messages.slice(-3),
+      "Flags (!) are automatic - stand next to a cell to probe it."];
+    render();
+    return;
+  }
   const d = KEYS[e.key];
   if (d) { e.preventDefault(); rArmed = 0; doMove(d); }
 });

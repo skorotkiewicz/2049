@@ -52,6 +52,10 @@ def main() -> int:
             last_key = key
             if key in MOVES:
                 g.move(key)
+            elif key in ("f", "F", "!"):
+                g.log(
+                    "Flags (!) are automatic - stand next to a cell to probe it."
+                )
             elif key:
                 g.log(f"Unknown key {key!r}: use arrows / wasd, q to quit.")
 
