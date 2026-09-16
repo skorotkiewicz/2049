@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>2049 — Mines of Merge</title>
+<title>2049 - Mines of Merge</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
   :root {
     --bg: #0d0d0d; --panel: #1c1c1c; --line: #3a3a3a;
@@ -65,13 +66,13 @@
 </head>
 <body>
 <div id="app">
-  <h1>2 0 4 9 <span>— Mines of Merge</span></h1>
+  <h1>2 0 4 9 <span>- Mines of Merge</span></h1>
   <div id="status">loading python runtime… (≈3 MB from CDN, cached after)</div>
   <div id="game" hidden>
     <div id="hud"></div>
     <div id="board"></div>
     <div id="msgs"></div>
-    <p class="hint">arrows / wasd — slide &nbsp;·&nbsp; R — restart &nbsp;·&nbsp; on touch: swipe</p>
+    <p class="hint">arrows / wasd - slide &nbsp;·&nbsp; R - restart &nbsp;·&nbsp; on touch: swipe</p>
   </div>
 </div>
 
@@ -79,7 +80,7 @@
 <script type="module">
 const $ = (id) => document.getElementById(id);
 
-// 2048 palette [fg, bg, bold] — mirrors the terminal UI
+// 2048 palette [fg, bg, bold] - mirrors the terminal UI
 const TILE = {
   2:    ["#bcbcbc", "#303030"],
   4:    ["#d7af87", "#3a3a3a"],
