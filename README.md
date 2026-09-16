@@ -1,5 +1,9 @@
 # 2049 — Mines of Merge
 
+<p align="center">
+  <img src="assets/screenshot.png" alt="2049 — Mines of Merge in a terminal" width="508">
+</p>
+
 A tiny roguelike that fuses **2048** and **Minesweeper**. You *are* the tile:
 every move slides the whole dungeon with 2048 rules while hidden mines —
 Minesweeper style — wait in the dark. Descend 8 depths and escape.
