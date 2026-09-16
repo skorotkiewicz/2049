@@ -1,6 +1,21 @@
 # 2049 — Mines of Merge
 
 <p align="center">
+  <a href="https://github.com/skorotkiewicz/2049/actions/workflows/deploy.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/skorotkiewicz/2049/deploy.yml?branch=main&label=deploy" alt="deploy status">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/skorotkiewicz/2049" alt="MIT license">
+  </a>
+  <img src="https://img.shields.io/badge/python-3.13%2B-3776AB?logo=python&logoColor=white" alt="python 3.13+">
+  <img src="https://img.shields.io/badge/uv-managed-DE3FE8" alt="managed with uv">
+</p>
+
+<p align="center">
+  <a href="https://sekor.eu.org/2049/"><b>▶ Play in the browser</b></a>
+</p>
+
+<p align="center">
   <img src="assets/screenshot.png" alt="2049 — Mines of Merge in a terminal" width="508">
 </p>
 
