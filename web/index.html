@@ -184,7 +184,20 @@ function render() {
   } else if (ov) { ov.remove(); }
 }
 
-function restart() { if (!ready) return; state = JSON.parse(shimFn.new()); render(); }
+let rArmed = 0; // double-press guard for abandoning an active run
+
+function restart() { if (!ready) return; rArmed = 0; state = JSON.parse(shimFn.new()); render(); }
+
+function restartKey() {
+  if (state.gameOver || Date.now() - rArmed < 2000) {
+    restart();
+  } else {
+    rArmed = Date.now();
+    state.messages = [...state.messages.slice(-3),
+      "Press R again to abandon this run."];
+    render();
+  }
+}
 
 function doMove(d) {
   if (!ready || state.gameOver) return;
@@ -200,9 +213,9 @@ const KEYS = {
 };
 addEventListener("keydown", (e) => {
   if (!ready) return;
-  if (e.key === "r" || e.key === "R") { if (state.gameOver) restart(); return; }
+  if (e.key === "r" || e.key === "R") { restartKey(); return; }
   const d = KEYS[e.key];
-  if (d) { e.preventDefault(); doMove(d); }
+  if (d) { e.preventDefault(); rArmed = 0; doMove(d); }
 });
 
 // ---- swipe ----

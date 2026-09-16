@@ -28,6 +28,7 @@ def main() -> int:
     print(CLEAR, end="")
     while True:
         g = new_game()
+        last_key = ""
         while True:
             sys.stdout.write(CLEAR + render(g) + "\n")
             sys.stdout.flush()
@@ -41,6 +42,14 @@ def main() -> int:
             key = input_mod.read_key()
             if key == "q":
                 return 0
+            if key in ("r", "R"):
+                # Double-press guard: abandoning a live run must be deliberate.
+                if last_key in ("r", "R"):
+                    break  # new run
+                g.log("Press r again to abandon this run.")
+                last_key = key
+                continue
+            last_key = key
             if key in MOVES:
                 g.move(key)
             elif key:
