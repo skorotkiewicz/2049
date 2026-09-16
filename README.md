@@ -68,7 +68,7 @@ from CDN on first visit); the frontend is plain HTML/CSS/JS with the same
 | Key | Action |
 | --- | --- |
 | arrows / `h j k l` | slide up / down / left / right |
-| `r` | new run (after death) |
+| `r` | new run |
 | `q` | quit |
 
 ## Layout
