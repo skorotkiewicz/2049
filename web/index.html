@@ -165,7 +165,7 @@ function render() {
     : m.includes("can't") || m.includes("Unknown") ? "m-dim"
     : "m-info";
   $("msgs").innerHTML = s.messages
-    .map((m) => `<div class="${cls(m)}">${m}</div>`).join("");
+    .map((m) => `<div class="${cls(m)}">${m.replace(/\x1b\[[0-9;]*m/g, "")}</div>`).join("");
 
   // Game over overlay
   let ov = document.getElementById("overlay");
