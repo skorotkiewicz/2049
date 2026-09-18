@@ -20,7 +20,9 @@ import requests
 
 from .core import BOARD_SIZE, EXIT, FLAG, Game
 
-API_URL = "https://openrouter.ai/api/alpha/decisions"
+# Any Jev-compatible decisions API works here. Point JEVD_API_URL at a
+# self-hosted Laya server (server.py) to play offline: no key, no egress.
+API_URL = os.environ.get("JEVD_API_URL", "https://openrouter.ai/api/alpha/decisions")
 MODEL = "typesafe/jev-1.13"
 TIMEOUT = 2.0  # generous; jev usually answers in ~70ms
 
@@ -99,8 +101,8 @@ def choose_move(g: Game) -> tuple[str | None, float]:
         return None, 0.0
 
     key = _api_key()
-    if not key:
-        return None, 0.0
+    if not key and "openrouter.ai" in API_URL:
+        return None, 0.0  # only the official API needs a key
 
     t0 = time.perf_counter()
     try:
