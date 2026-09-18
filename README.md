@@ -38,6 +38,17 @@ uv run game
 
 No dependencies beyond Python itself; everything is managed by `uv`.
 
+### Let the AI play
+
+```sh
+OPENROUTER_API_KEY=sk-or-... uv run game --ai
+```
+
+`jev.py` asks the `typesafe/jev-1.13` decision model (OpenRouter) one
+typed question per turn -- which legal move to slide -- and decides in
+~70ms. Press `a` anytime to take over. Without an API key it falls
+back to random legal moves.
+
 ## Run in the browser
 
 ```sh
@@ -68,6 +79,7 @@ from CDN on first visit); the frontend is plain HTML/CSS/JS with the same
 | Key | Action |
 | --- | --- |
 | arrows / `h j k l` | slide up / down / left / right |
+| `a` | toggle the AI (jev) |
 | `r` | new run |
 | `q` | quit |
 
@@ -79,6 +91,7 @@ Best score is saved locally - `localStorage` in the browser,
 ```
 src/game/
 ├── core.py    # game state, 2048 slide, mines, probing, descent
+├── jev.py     # typesafe/jev-1.13 decision model (--ai autoplay)
 ├── ui.py      # ANSI board renderer (no deps)
 ├── input.py   # raw keypress input (POSIX + Windows)
 └── main.py    # main loop
