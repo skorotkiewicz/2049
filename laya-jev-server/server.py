@@ -116,21 +116,33 @@ class LayaService:
                 )
                 if os.path.isdir(self._name):
                     # local checkpoint: hand it to the router rather than download a copy
-                    from rl_agent_api import RLAgent  # type: ignore  # legacy local runtime
-
-                    try:
-                        router.attach("english", laya.load(self._name))
-                    except AttributeError:  # very old laya builds without laya.load
-                        router.attach("english", RLAgent(self._name))
+                    router.attach("english", laya.load(self._name))
                 self._router = router
             return self._router
 
     def route(self, state: Any, questions: dict, model: str | None = None, lang: str | None = None) -> Any:
         """Decide which checkpoint serves this request, without loading or running anything."""
-        return self.router.route(state, questions, model=model or None, lang=lang or None)
+        return self.router.route(state, questions, model=self._known_model(model), lang=lang or None)
+
+    @staticmethod
+    def _known_model(model: str | None) -> str | None:
+        """Pass through checkpoint names the Router knows; ignore anything else.
+
+        `model` is accepted for Jev compatibility, and foreign clients send values like
+        "typesafe/jev-1.13" or "laya" that are not checkpoint names -- those should not
+        422 the request, they should fall through to automatic routing.
+        """
+        if not model:
+            return None
+        from laya.router import normalise_name
+
+        try:
+            return normalise_name(model)
+        except (ValueError, KeyError):
+            return None
 
     def predict(self, state: Any, questions: dict, model: str | None = None, lang: str | None = None) -> dict:
-        result = self.router.predict(state, questions, model=model or None, lang=lang or None)
+        result = self.router.predict(state, questions, model=self._known_model(model), lang=lang or None)
         result["model"] = self.name  # normalize: ignore whatever model name the backend reports
         return result
 
