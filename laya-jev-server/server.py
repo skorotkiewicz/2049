@@ -467,3 +467,4 @@ if __name__ == "__main__":
     port = int(os.environ.get("LAYA_PORT", "8000"))
     print(f"Serving Laya ({service.name}, {service.mode} mode) on http://{host}:{port}")
     uvicorn.run(app, host=host, port=port, log_level="info")
+#
